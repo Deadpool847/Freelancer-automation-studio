@@ -75,6 +75,16 @@ class FeatureBuilder:
         if isinstance(X, pl.DataFrame):
             X = X.to_pandas()
         
+        # Handle datetime columns
+        for col in X.columns:
+            if pd.api.types.is_datetime64_any_dtype(X[col]):
+                # Convert datetime to numeric features
+                X[f'{col}_year'] = X[col].dt.year
+                X[f'{col}_month'] = X[col].dt.month
+                X[f'{col}_day'] = X[col].dt.day
+                X[f'{col}_dayofweek'] = X[col].dt.dayofweek
+                X = X.drop(columns=[col])
+        
         # Encode categorical columns
         for col in X.columns:
             if X[col].dtype == 'object' or X[col].dtype.name == 'category':
