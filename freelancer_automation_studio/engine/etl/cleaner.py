@@ -91,7 +91,7 @@ class DataCleaner:
             numeric_cols = [col for col in df.columns if df[col].dtype in [pl.Float32, pl.Float64, pl.Int32, pl.Int64]]
             for col in numeric_cols:
                 mean_val = df[col].mean()
-                if mean_val is not None and not pl.col(col).is_null().all():
+                if mean_val is not None:
                     df = df.with_columns(pl.col(col).fill_null(mean_val))
                 else:
                     # If all values are null, fill with 0
@@ -101,7 +101,7 @@ class DataCleaner:
             numeric_cols = [col for col in df.columns if df[col].dtype in [pl.Float32, pl.Float64, pl.Int32, pl.Int64]]
             for col in numeric_cols:
                 median_val = df[col].median()
-                if median_val is not None and not pl.col(col).is_null().all():
+                if median_val is not None:
                     df = df.with_columns(pl.col(col).fill_null(median_val))
                 else:
                     # If all values are null, fill with 0
