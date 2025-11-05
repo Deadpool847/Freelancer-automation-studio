@@ -210,41 +210,49 @@ def main():
             
             if st.button("🧹 Run ETL Pipeline"):
                 with st.spinner("Cleaning and profiling data..."):
-                    cleaner = DataCleaner(
-                        remove_duplicates=remove_duplicates,
-                        handle_missing=handle_missing,
-                        standardize_dates=standardize_dates
-                    )
+                    try:
+                        cleaner = DataCleaner(
+                            remove_duplicates=remove_duplicates,
+                            handle_missing=handle_missing,
+                            standardize_dates=standardize_dates
+                        )
+                        
+                        # Run ETL
+                        cleaned_df, profile, quality_score = cleaner.clean_and_profile(bronze_path)
+                        
+                        # Save to silver
+                        io_helper = IOHelper()
+                        silver_path = io_helper.save_to_silver(cleaned_df, st.session_state.run_id)
+                        
+                        st.session_state.results['silver_path'] = str(silver_path)
+                        st.session_state.results['profile'] = profile
+                        st.session_state.results['quality_score'] = quality_score
+                        
+                        # Display results
+                        st.success(f"✅ ETL Complete! Quality Score: {quality_score:.2%}")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Rows", f"{len(cleaned_df):,}")
+                        with col2:
+                            st.metric("Columns", len(cleaned_df.columns))
+                        with col3:
+                            st.metric("Memory", f"{cleaned_df.estimated_size('mb'):.2f} MB")
+                        
+                        # Show profile
+                        st.subheader("📊 Data Profile")
+                        st.json(profile)
+                        
+                        # Preview data
+                        st.subheader("👀 Data Preview")
+                        st.dataframe(cleaned_df.head(100).to_pandas(), use_container_width=True)
                     
-                    # Run ETL
-                    cleaned_df, profile, quality_score = cleaner.clean_and_profile(bronze_path)
-                    
-                    # Save to silver
-                    io_helper = IOHelper()
-                    silver_path = io_helper.save_to_silver(cleaned_df, st.session_state.run_id)
-                    
-                    st.session_state.results['silver_path'] = str(silver_path)
-                    st.session_state.results['profile'] = profile
-                    st.session_state.results['quality_score'] = quality_score
-                    
-                    # Display results
-                    st.success(f"✅ ETL Complete! Quality Score: {quality_score:.2%}")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Rows", f"{len(cleaned_df):,}")
-                    with col2:
-                        st.metric("Columns", len(cleaned_df.columns))
-                    with col3:
-                        st.metric("Memory", f"{cleaned_df.estimated_size('mb'):.2f} MB")
-                    
-                    # Show profile
-                    st.subheader("📊 Data Profile")
-                    st.json(profile)
-                    
-                    # Preview data
-                    st.subheader("👀 Data Preview")
-                    st.dataframe(cleaned_df.head(100).to_pandas(), use_container_width=True)
+                    except ValueError as e:
+                        st.error(f"❌ ETL Error: {str(e)}")
+                        st.info("💡 **Tip**: Try changing 'Handle Missing Values' to 'fill_mean', 'fill_median', or 'fill_mode' instead of 'drop'")
+                    except Exception as e:
+                        st.error(f"❌ Unexpected Error: {str(e)}")
+                        st.exception(e)
         else:
             st.warning("⚠️ Please ingest data first (Tab 1)")
     
@@ -262,27 +270,35 @@ def main():
             if detection_mode == "Auto-Detect":
                 if st.button("🔍 Detect Task Type"):
                     with st.spinner("Analyzing data and detecting task type..."):
-                        detector = TaskDetector()
-                        task_info = detector.detect_task(silver_path)
+                        try:
+                            detector = TaskDetector()
+                            task_info = detector.detect_task(silver_path)
+                            
+                            st.session_state.results['task_info'] = task_info
+                            
+                            st.success(f"✅ Detected: **{task_info['task_type']}** | **{task_info['ml_type']}**")
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.json({
+                                    "Task Type": task_info['task_type'],
+                                    "ML Type": task_info['ml_type'],
+                                    "Target Column": task_info.get('target_column'),
+                                    "Feature Count": len(task_info.get('features', []))
+                                })
+                            
+                            with col2:
+                                if 'recommendations' in task_info:
+                                    st.markdown("**Recommendations:**")
+                                    for rec in task_info['recommendations']:
+                                        st.markdown(f"- {rec}")
                         
-                        st.session_state.results['task_info'] = task_info
-                        
-                        st.success(f"✅ Detected: **{task_info['task_type']}** | **{task_info['ml_type']}**")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.json({
-                                "Task Type": task_info['task_type'],
-                                "ML Type": task_info['ml_type'],
-                                "Target Column": task_info.get('target_column'),
-                                "Feature Count": len(task_info.get('features', []))
-                            })
-                        
-                        with col2:
-                            if 'recommendations' in task_info:
-                                st.markdown("**Recommendations:**")
-                                for rec in task_info['recommendations']:
-                                    st.markdown(f"- {rec}")
+                        except ValueError as e:
+                            st.error(f"❌ Detection Error: {str(e)}")
+                            st.info("💡 **Solution**: Go back to Tab 2 (ETL) and use a different 'Handle Missing Values' strategy")
+                        except Exception as e:
+                            st.error(f"❌ Unexpected Error: {str(e)}")
+                            st.exception(e)
             
             else:  # Manual Select
                 col1, col2 = st.columns(2)

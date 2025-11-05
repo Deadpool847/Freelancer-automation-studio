@@ -30,6 +30,17 @@ class DataCleaner:
         # Cleaning steps
         df = self._remove_duplicates(df) if self.remove_duplicates else df
         df = self._handle_missing_values(df)
+        
+        # Check if DataFrame is empty after cleaning
+        if len(df) == 0:
+            logger.error("All rows were dropped during cleaning. Cannot proceed.")
+            raise ValueError(
+                "ETL Error: All rows were removed during cleaning. "
+                "Reasons: (1) All rows had missing values with handle_missing='drop', "
+                "or (2) All rows were duplicates. "
+                "Solution: Change handle_missing strategy to 'fill_mean', 'fill_median', or 'fill_mode'."
+            )
+        
         df = self._standardize_columns(df)
         df = self._detect_and_parse_dates(df) if self.standardize_dates else df
         df = self._clean_text_columns(df)
@@ -80,18 +91,42 @@ class DataCleaner:
             numeric_cols = [col for col in df.columns if df[col].dtype in [pl.Float32, pl.Float64, pl.Int32, pl.Int64]]
             for col in numeric_cols:
                 mean_val = df[col].mean()
-                df = df.with_columns(pl.col(col).fill_null(mean_val))
+                if mean_val is not None:
+                    df = df.with_columns(pl.col(col).fill_null(mean_val))
+                else:
+                    # If all values are null, fill with 0
+                    df = df.with_columns(pl.col(col).fill_null(0))
         
         elif self.handle_missing == "fill_median":
             numeric_cols = [col for col in df.columns if df[col].dtype in [pl.Float32, pl.Float64, pl.Int32, pl.Int64]]
             for col in numeric_cols:
                 median_val = df[col].median()
-                df = df.with_columns(pl.col(col).fill_null(median_val))
+                if median_val is not None:
+                    df = df.with_columns(pl.col(col).fill_null(median_val))
+                else:
+                    # If all values are null, fill with 0
+                    df = df.with_columns(pl.col(col).fill_null(0))
         
         elif self.handle_missing == "fill_mode":
             for col in df.columns:
-                mode_val = df[col].mode().first()
-                df = df.with_columns(pl.col(col).fill_null(mode_val))
+                mode_result = df[col].mode()
+                # Check if mode exists and is not empty
+                if len(mode_result) > 0:
+                    mode_val = mode_result.first()
+                    if mode_val is not None:
+                        df = df.with_columns(pl.col(col).fill_null(mode_val))
+                    else:
+                        # If mode is None, fill with appropriate default
+                        if df[col].dtype in [pl.Float32, pl.Float64, pl.Int32, pl.Int64]:
+                            df = df.with_columns(pl.col(col).fill_null(0))
+                        elif df[col].dtype == pl.Utf8:
+                            df = df.with_columns(pl.col(col).fill_null(""))
+                else:
+                    # Column has all nulls, fill with default
+                    if df[col].dtype in [pl.Float32, pl.Float64, pl.Int32, pl.Int64]:
+                        df = df.with_columns(pl.col(col).fill_null(0))
+                    elif df[col].dtype == pl.Utf8:
+                        df = df.with_columns(pl.col(col).fill_null(""))
         
         return df
     

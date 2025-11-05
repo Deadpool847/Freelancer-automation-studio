@@ -21,6 +21,22 @@ class TaskDetector:
         
         df = pl.read_parquet(data_path)
         
+        # Check if DataFrame is empty
+        if len(df) == 0:
+            logger.error("Cannot detect task: DataFrame is empty")
+            raise ValueError(
+                "Task Detection Error: The dataset is empty (0 rows). "
+                "This typically happens when all rows were dropped during ETL. "
+                "Solution: Go back to ETL step and change 'Handle Missing Values' to 'fill_mean', 'fill_median', or 'fill_mode' instead of 'drop'."
+            )
+        
+        if len(df.columns) == 0:
+            logger.error("Cannot detect task: DataFrame has no columns")
+            raise ValueError(
+                "Task Detection Error: The dataset has no columns. "
+                "Please check your input data."
+            )
+        
         # Analyze columns
         column_analysis = self._analyze_columns(df)
         
@@ -57,12 +73,21 @@ class TaskDetector:
             null_count = df[col].null_count()
             total_count = len(df)
             
-            col_info = {
-                'dtype': str(dtype),
-                'unique_count': unique_count,
-                'null_percentage': (null_count / total_count) * 100,
-                'cardinality': unique_count / total_count if total_count > 0 else 0
-            }
+            # Handle empty DataFrame
+            if total_count == 0:
+                col_info = {
+                    'dtype': str(dtype),
+                    'unique_count': 0,
+                    'null_percentage': 0.0,
+                    'cardinality': 0.0
+                }
+            else:
+                col_info = {
+                    'dtype': str(dtype),
+                    'unique_count': unique_count,
+                    'null_percentage': (null_count / total_count) * 100,
+                    'cardinality': unique_count / total_count
+                }
             
             # Detect column purpose
             if any(ind in col_lower for ind in self.text_indicators):
