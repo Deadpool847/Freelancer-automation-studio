@@ -21,6 +21,22 @@ class TaskDetector:
         
         df = pl.read_parquet(data_path)
         
+        # Check if DataFrame is empty
+        if len(df) == 0:
+            logger.error("Cannot detect task: DataFrame is empty")
+            raise ValueError(
+                "Task Detection Error: The dataset is empty (0 rows). "
+                "This typically happens when all rows were dropped during ETL. "
+                "Solution: Go back to ETL step and change 'Handle Missing Values' to 'fill_mean', 'fill_median', or 'fill_mode' instead of 'drop'."
+            )
+        
+        if len(df.columns) == 0:
+            logger.error("Cannot detect task: DataFrame has no columns")
+            raise ValueError(
+                "Task Detection Error: The dataset has no columns. "
+                "Please check your input data."
+            )
+        
         # Analyze columns
         column_analysis = self._analyze_columns(df)
         
