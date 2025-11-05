@@ -169,12 +169,17 @@ class TaskDetector:
         if task_type == 'classification':
             target_col = self._identify_target_column(df, column_analysis, task_type)
             if target_col:
-                value_counts = df[target_col].value_counts()
-                if len(value_counts) > 0:
-                    max_count = value_counts['counts'].max()
-                    min_count = value_counts['counts'].min()
-                    if max_count / min_count > 3:
-                        recommendations.append("Imbalanced classes detected - consider SMOTE or class weights")
+                try:
+                    value_counts = df[target_col].value_counts()
+                    if len(value_counts) > 0:
+                        # Polars value_counts returns a DataFrame with 'count' column (not 'counts')
+                        counts = value_counts.select('count').to_series()
+                        max_count = counts.max()
+                        min_count = counts.min()
+                        if max_count / min_count > 3:
+                            recommendations.append("Imbalanced classes detected - consider SMOTE or class weights")
+                except:
+                    pass
         
         # Feature count
         if len(df.columns) > 100:
