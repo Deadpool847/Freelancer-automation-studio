@@ -30,6 +30,17 @@ class DataCleaner:
         # Cleaning steps
         df = self._remove_duplicates(df) if self.remove_duplicates else df
         df = self._handle_missing_values(df)
+        
+        # Check if DataFrame is empty after cleaning
+        if len(df) == 0:
+            logger.error("All rows were dropped during cleaning. Cannot proceed.")
+            raise ValueError(
+                "ETL Error: All rows were removed during cleaning. "
+                "Reasons: (1) All rows had missing values with handle_missing='drop', "
+                "or (2) All rows were duplicates. "
+                "Solution: Change handle_missing strategy to 'fill_mean', 'fill_median', or 'fill_mode'."
+            )
+        
         df = self._standardize_columns(df)
         df = self._detect_and_parse_dates(df) if self.standardize_dates else df
         df = self._clean_text_columns(df)
