@@ -57,12 +57,21 @@ class TaskDetector:
             null_count = df[col].null_count()
             total_count = len(df)
             
-            col_info = {
-                'dtype': str(dtype),
-                'unique_count': unique_count,
-                'null_percentage': (null_count / total_count) * 100,
-                'cardinality': unique_count / total_count if total_count > 0 else 0
-            }
+            # Handle empty DataFrame
+            if total_count == 0:
+                col_info = {
+                    'dtype': str(dtype),
+                    'unique_count': 0,
+                    'null_percentage': 0.0,
+                    'cardinality': 0.0
+                }
+            else:
+                col_info = {
+                    'dtype': str(dtype),
+                    'unique_count': unique_count,
+                    'null_percentage': (null_count / total_count) * 100,
+                    'cardinality': unique_count / total_count
+                }
             
             # Detect column purpose
             if any(ind in col_lower for ind in self.text_indicators):
