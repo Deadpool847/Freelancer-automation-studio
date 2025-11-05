@@ -1,0 +1,56 @@
+# Web Scraping Source Configuration
+
+# Default Settings
+defaults:
+  user_agent: "FreelancerAutomationStudio/1.0"
+  timeout: 30
+  max_retries: 3
+  retry_delay: 2
+  respect_robots: true
+  rate_limit: 1.0
+
+# Scraping Patterns
+patterns:
+  text:
+    selectors:
+      - "p"
+      - "article"
+      - "div.content"
+      - "div.text"
+  
+  headers:
+    selectors:
+      - "h1"
+      - "h2"
+      - "h3"
+      - "h4"
+  
+  links:
+    selectors:
+      - "a[href]"
+    filters:
+      - "^http"
+      - "^https"
+  
+  metadata:
+    selectors:
+      - "meta[name='description']"
+      - "meta[property='og:description']"
+      - "meta[name='keywords']"
+
+# Robots.txt Compliance
+robots:
+  respect: true
+  crawl_delay_default: 1.0
+  check_sitemap: true
+
+# Error Handling
+error_handling:
+  skip_on_error: true
+  log_errors: true
+  retry_on:
+    - 429  # Too Many Requests
+    - 500  # Internal Server Error
+    - 502  # Bad Gateway
+    - 503  # Service Unavailable
+    - 504  # Gateway Timeout

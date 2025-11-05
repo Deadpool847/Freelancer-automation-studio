@@ -1,0 +1,74 @@
+# ETL Rules Configuration
+
+# Column Type Detection
+column_detection:
+  numeric:
+    patterns:
+      - "^(int|float|double|decimal)"
+    suffixes:
+      - "_id"
+      - "_count"
+      - "_amount"
+      - "_value"
+  
+  categorical:
+    max_cardinality_ratio: 0.05
+    min_frequency: 2
+  
+  text:
+    min_avg_length: 50
+    indicators:
+      - "text"
+      - "description"
+      - "comment"
+      - "review"
+      - "content"
+  
+  temporal:
+    indicators:
+      - "date"
+      - "time"
+      - "timestamp"
+      - "year"
+      - "month"
+      - "day"
+    date_formats:
+      - "%Y-%m-%d"
+      - "%m/%d/%Y"
+      - "%d-%m-%Y"
+      - "%Y-%m-%d %H:%M:%S"
+
+# Data Quality Rules
+quality_checks:
+  null_threshold: 0.5  # Drop columns with >50% nulls
+  duplicate_threshold: 0.1  # Flag if >10% duplicates
+  outlier_detection:
+    method: "iqr"  # Options: iqr, zscore
+    threshold: 3
+
+# Cleaning Rules
+cleaning:
+  text:
+    strip_whitespace: true
+    lowercase: false
+    remove_special_chars: false
+    remove_html: true
+  
+  numeric:
+    handle_inf: true
+    clip_outliers: false
+  
+  categorical:
+    handle_rare_categories: true
+    rare_threshold: 0.01
+
+# Standardization
+standardization:
+  column_names:
+    lowercase: true
+    replace_spaces: "_"
+    remove_special_chars: true
+  
+  values:
+    trim_strings: true
+    standardize_case: false

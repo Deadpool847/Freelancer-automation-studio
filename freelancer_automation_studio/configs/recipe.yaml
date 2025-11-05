@@ -1,0 +1,82 @@
+# ML Pipeline Recipe Configuration
+
+# Data Ingestion
+ingestion:
+  max_file_size_mb: 500
+  supported_formats:
+    - csv
+    - xlsx
+    - xls
+    - parquet
+    - json
+  scraping:
+    respect_robots: true
+    default_rate_limit: 1.0
+    max_pages: 100
+    timeout: 30
+
+# ETL Configuration
+etl:
+  remove_duplicates: true
+  handle_missing: "drop"  # Options: drop, fill_mean, fill_median, fill_mode
+  standardize_dates: true
+  min_quality_score: 0.7
+  encoding: "utf-8"
+
+# Feature Engineering
+features:
+  test_size: 0.2
+  random_state: 42
+  scaling: true
+  time_series_lags: [1, 2, 3, 7, 14, 30]
+  rolling_windows: [7, 14, 30]
+
+# Model Training
+models:
+  classification:
+    algorithms:
+      - lightgbm
+      - xgboost
+      - random_forest
+    optuna_trials: 20
+    cv_folds: 5
+  
+  regression:
+    algorithms:
+      - lightgbm
+      - xgboost
+      - random_forest
+    optuna_trials: 20
+    cv_folds: 5
+  
+  nlp:
+    algorithms:
+      - distilbert
+      - tfidf_linear
+    max_length: 512
+    batch_size: 16
+  
+  time_series:
+    algorithms:
+      - lightgbm
+      - xgboost
+    lookback_window: 30
+
+# Explainability
+explainability:
+  max_shap_samples: 100
+  feature_importance_top_n: 20
+  generate_pdp: true
+
+# Visualization
+visualization:
+  default_theme: "plotly_white"
+  figure_height: 500
+  figure_width: 800
+  color_palette: "Plotly"
+
+# Export
+export:
+  default_format: "parquet"
+  compression: "snappy"
+  include_manifest: true
