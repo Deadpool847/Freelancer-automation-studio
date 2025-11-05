@@ -270,27 +270,35 @@ def main():
             if detection_mode == "Auto-Detect":
                 if st.button("🔍 Detect Task Type"):
                     with st.spinner("Analyzing data and detecting task type..."):
-                        detector = TaskDetector()
-                        task_info = detector.detect_task(silver_path)
+                        try:
+                            detector = TaskDetector()
+                            task_info = detector.detect_task(silver_path)
+                            
+                            st.session_state.results['task_info'] = task_info
+                            
+                            st.success(f"✅ Detected: **{task_info['task_type']}** | **{task_info['ml_type']}**")
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.json({
+                                    "Task Type": task_info['task_type'],
+                                    "ML Type": task_info['ml_type'],
+                                    "Target Column": task_info.get('target_column'),
+                                    "Feature Count": len(task_info.get('features', []))
+                                })
+                            
+                            with col2:
+                                if 'recommendations' in task_info:
+                                    st.markdown("**Recommendations:**")
+                                    for rec in task_info['recommendations']:
+                                        st.markdown(f"- {rec}")
                         
-                        st.session_state.results['task_info'] = task_info
-                        
-                        st.success(f"✅ Detected: **{task_info['task_type']}** | **{task_info['ml_type']}**")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.json({
-                                "Task Type": task_info['task_type'],
-                                "ML Type": task_info['ml_type'],
-                                "Target Column": task_info.get('target_column'),
-                                "Feature Count": len(task_info.get('features', []))
-                            })
-                        
-                        with col2:
-                            if 'recommendations' in task_info:
-                                st.markdown("**Recommendations:**")
-                                for rec in task_info['recommendations']:
-                                    st.markdown(f"- {rec}")
+                        except ValueError as e:
+                            st.error(f"❌ Detection Error: {str(e)}")
+                            st.info("💡 **Solution**: Go back to Tab 2 (ETL) and use a different 'Handle Missing Values' strategy")
+                        except Exception as e:
+                            st.error(f"❌ Unexpected Error: {str(e)}")
+                            st.exception(e)
             
             else:  # Manual Select
                 col1, col2 = st.columns(2)
